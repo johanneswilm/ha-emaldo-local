@@ -33,6 +33,12 @@ at least:
   carries the API base URL; the module validates TLS certificates, so
   serve a valid cert for a hostname you control).
 
+Security note: the module contains a GSM/eSIM stack (APN + eSIM profile download
+from the vendor). If your installation has a paid data plan on that eSIM, the
+vendor — or whoever acquires its infrastructure — can reach your module
+over cellular, bypassing anything you run on your LAN. Disable/not pay
+for the eSIM data plan, or make sure the module's GSM is switched off.
+
 No public, supported takeover stack is published alongside this repo
 (yet); treat this component as the Home Assistant side of a DIY setup.
 You will also want your own copy of the protocol and library
