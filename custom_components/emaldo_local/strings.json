@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Emaldo local takeover",
+        "description": "Point the Emaldo integration at your self-hosted takeover API. Enter the HTTPS host of your takeover server (e.g. {example}). The Emaldo cloud integration must already be configured.",
+        "data": {
+          "api_host": "Takeover API host"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Already configured."
+    }
+  }
+}
