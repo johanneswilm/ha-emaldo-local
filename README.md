@@ -58,3 +58,21 @@ patches host constants, it does not implement the protocol.
 - One config entry; delete and re-add to change the host.
 - Nothing is sent to the vendor once repointed; the takeover server
   answers everything.
+
+## Client credentials
+
+The official mobile app and this ecosystem share fixed client
+credentials (extracted from the vendor app; the vendor refuses to offer
+a customer API). A takeover server must answer calls authenticated with
+them:
+
+```
+APP_ID     = CXRqKjx2MzSAkdyucR9NDyPiiQR2vQcQ
+APP_SECRET = FpF4Uqiio9k8p9VUSX36UZxy9wLs7ybT
+```
+
+They authenticate the *client*, not an account: your vendor account
+email/password is still what logs in (against your takeover server once
+repointed). Per-install device identities (E2E `end_id`/secrets, module
+registration token) are issued by the vendor to YOUR module and are not
+— and cannot be — shared here.
