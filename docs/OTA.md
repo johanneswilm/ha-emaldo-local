@@ -43,15 +43,18 @@ Rsp (plaintext JSON inside the gm2 envelope):
 2. Otherwise: downloads the file (plain HTTP GET works; chunked retry
    machinery exists — `download chunk %d`, `md5sum %s`), verifies md5,
    **stages** the package.
-3. Staged ≠ installed. The apply step is gated by an internal scheduler
-   we did not fully map: it did **not** run at boot, did **not** run with
-   `"force": true` in the manifest, and BLE `reboot_iot` was *inhibited*
-   while a package was staged. Firmware strings hint at the machinery:
-   `check update waiting duration after configured`, force-update retry
-   counters (`IsForceUpdateRetryLimitReached`, `skip force update retry
-   limit`), `ResetStatusForRetry`.
+3. Staged ≠ installed — **the apply is a ~60-minute in-session timer**
+   (verified live 2026-11-18): download+md5+stage at T, binary swap at
+   ~T+60 min, then the app **restarts itself** — no whole-module reboot,
+   no `insert-upgrade-log`. From the outside the only traces are seconds
+   of silence and a re-registration (`update-eid-v2`), easy to miss.
+   While an update is pending the check loop re-polls the manifest every
+   ~5-10 min, and the BLE `check_update` command triggers an immediate
+   re-check. `"force": true` is not required. Firmware strings consistent
+   with this: `check update waiting duration after configured`,
+   `ResetStatusForRetry`, force-update retry counters.
 4. The staged package does **not** survive a reboot — every boot
-   re-downloads and re-stages.
+   re-downloads and re-stages (so the ~60 min timer restarts).
 5. The module re-checks at boot and (observed) at ~23:59 local daily.
 
 ## 3. Update-trigger commands
@@ -76,13 +79,18 @@ Rsp (plaintext JSON inside the gm2 envelope):
    the running one. Expected: nothing happens (§2.1 — the skip behavior
    itself is a useful signal).
 2. Serve a **bit-tweaked copy** (two chars flipped in an error string,
-   size unchanged; document your diff). Expected: download + stage, no
-   install yet.
-3. Power-cycle the device. Expected: re-download, stage; identity
-   (`update-eid-v2` at boot, `bmt_id`/`eid`) **unchanged** — `/root`
-   (config, identity dotfiles, databases) survives a same-partition
-   binary swap. This is the safety property the custom-firmware track
-   relies on.
+   size unchanged; document your diff). Expected: download + stage, then
+   **install ~60 min later**. For an externally visible result, flip the
+   *version string* instead (`v2.35.3`→`v2.35.5`, one char, same length):
+   after the swap, `BLE get_version` answers `v2.35.5`. Watch for short
+   silences and an `update-eid-v2` re-registration — not a reboot.
+3. Proof probe: serve the **original vendor bytes** under a higher
+   version. A stock module skips them (offered md5 == its own binary); a
+   module running your build downloads them — clean, externally visible
+   proof that your binary is live. Identity (`bmt_id`/`eid` in
+   `update-eid-v2`) stays unchanged across swaps: `/root` (config,
+   identity dotfiles, databases) survives a same-partition binary swap.
+   This is the safety property the custom-firmware track relies on.
 4. Rollback = manifest pointing back at a copy of the vendor binary.
 
 ## 5. Implications
