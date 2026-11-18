@@ -11,6 +11,8 @@ and switches its servers off, **your battery keeps working physically
 but becomes unmanageable**: the mobile app and the Home Assistant
 integration both die with the cloud.
 
+License: MIT (see LICENSE).
+
 This project keeps you in control of your own hardware after that
 happens: you run the cloud's endpoints yourself, using your module's
 identity captured while the vendor is still alive.
