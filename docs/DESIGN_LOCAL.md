@@ -24,9 +24,11 @@ cloud involved. See `README.md` for the running stack.
 | e2e frames | TLV binary (`0xa0a0` end_id, `0xa0a1` group, `0xa0a2` receiver, `0x90a3` nonce, `0x86f6` msgid), payloads RC4(`chat_secret`); relay is a blind forwarder — **no relay-side crypto**, so a dumb relay suffices |
 
 Key constants (global in both app and module binaries): APP_SECRET
-`FpF4Uqiio9k8p9VUSX36UZxy9wLs7ybT`; home group `<redacted-home-group-id>`;
-chat_secret `<redacted-home-chat-secret>` (stable per home across logins);
-module reg JWT + reg_token `CXRq...` replay verbatim.
+`FpF4Uqiio9k8p9VUSX36UZxy9wLs7ybT` (already public — published by the
+community SDK). Your *home-specific* `group_id` / `chat_secret` come from
+your own `e2e-bmt-login` capture (see `docs/PROTOCOL.md` §3) — never share
+them; they are unforgeable identity material.
+module reg JWT + reg_token replayed verbatim from your capture.
 
 ## Identity strategy
 
@@ -112,7 +114,7 @@ shell; the HA Core backup API (`backup/generate`, `/api/backup/download`,
 
 ## Capture inventory (keep until takeover is permanent)
 
-`captures/` hourly pcap ring (.185 everything), `e2e_transcript_*.pcap`,
+`captures/` hourly pcap ring (module IP, everything), `e2e_transcript_*.pcap`,
 `fake_api.log` (every module API call, decrypted), `relay_live.log`,
 `e2e_static.json` (last real server-issued identity), `docs/PROTOCOL.md`,
 `docs/emaldo/` (working Python app client).

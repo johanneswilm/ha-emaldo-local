@@ -238,7 +238,7 @@ def gm1_corpus_lookup(path: str, want_ok: bool = False):
 
 APP_DEV = {"id": "<your-bmt-id>", "name": "Power Core 2.0",
            "model": "PC1-BAK15-HS10", "country_code": "SE",
-           "delivery_area": "SE1", "addr": ""}
+           "delivery_area": "SE4", "addr": ""}
 
 
 def _gm1_synth(path: str):

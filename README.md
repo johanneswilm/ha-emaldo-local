@@ -231,6 +231,23 @@ If you have a takeover setup (or a better one), please open an issue
 here — the goal is one working path for everyone before the cloud
 disappears.
 
+## Documentation map
+
+* [`docs/PROTOCOL.md`](docs/PROTOCOL.md) — the protocol bible: REST
+  (gm1/gm2), e2e relay sessions, packet formats, every known command and
+  payload layout, module-side API.
+* [`docs/OTA.md`](docs/OTA.md) — the OTA/update contract: manifest
+  schema, the md5-skip and stage-don't-install behaviors, the safe
+  self-test recipe, and why you end up owning the module's binary.
+* [`docs/APP_COMMANDS.md`](docs/APP_COMMANDS.md) — the app's msct command
+  channel (transport, the `0xA0xx` opcode table incl. `update_chips`),
+  and official-app quirks (cloud-side "up to date" verdict, address-id
+  rotation per `e2e-user-login`, the ~30 s live-data flakiness).
+* [`docs/CUSTOM_FIRMWARE.md`](docs/CUSTOM_FIRMWARE.md) — design notes for
+  a community replacement firmware: local web UI for MQTT-broker config,
+  HA MQTT discovery, BLE provisioning, phasing, and the remaining RE work
+  items.
+
 ## Known pitfalls (learned the hard way)
 
 * Vendor "successes" with empty `Result` and `Status 0` with HTTP 200 —
