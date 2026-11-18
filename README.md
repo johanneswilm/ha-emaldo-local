@@ -250,6 +250,16 @@ disappears.
   HA MQTT discovery, BLE provisioning, phasing, and the remaining RE work
   items.
 
+## Companion: emaldo-local firmware
+
+The firmware half of this project lives in its own repo:
+[johanneswilm/emaldo-local](https://github.com/johanneswilm/emaldo-local) —
+an MIT-licensed, from-scratch replacement for the vendor module app
+(web config UI, MQTT + Home Assistant discovery, signed self-updates).
+**Untested and not for use while the vendor cloud still matters to you**
+(see its README); the takeover stack in this repo is the right tool
+until then.
+
 ## Known pitfalls (learned the hard way)
 
 * Vendor "successes" with empty `Result` and `Status 0` with HTTP 200 —
