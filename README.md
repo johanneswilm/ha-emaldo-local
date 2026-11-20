@@ -249,6 +249,10 @@ disappears.
   a community replacement firmware: local web UI for MQTT-broker config,
   HA MQTT discovery, BLE provisioning, phasing, and the remaining RE work
   items.
+* [`docs/VENDOR_BRIDGE.md`](docs/VENDOR_BRIDGE.md) — keeping grid-rewards
+  eligibility while running the vendor-free firmware: a two-headed bridge
+  on a home server that emulates the device toward Emaldo's cloud and
+  translates dispatches into the local firmware's API.
 
 ## Companion: emaldo-local firmware
 
