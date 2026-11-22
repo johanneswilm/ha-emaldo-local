@@ -93,6 +93,10 @@ bridge's output diffable against the template in CI.
   With a flexible contract the bridge can simply mark the unit unavailable
   for dispatches it does not want.
 
+## MQTT / FCR status (reverse-engineered 2026-11)
+
+The cred handout is fully decoded: the module POSTs to `{mqtt_broker_router_url}/auth/broker_url/`, the server answers `{"token", "expired_at", "broker_url"}` (gm2 envelope), and the module's parser reads only `broker_url`. **But the MQTT client only starts on units enrolled in FCR/mFRR balancing programs** — verified three ways: the real `get_master_config_area` contains no enable flags (only area metadata), the vendor app channel has sent zero FCR/rewards frames to a flexible-rewards unit across months of capture, and the polling cadence matches a credential-refresh loop, not a connect attempt. Flexible-rewards dispatches travel the e2e/AI-plan channel instead — which the bridge already emulates. The fcr/mfrr schedule payload formats remain uncaptured until an FCR-enrolled device appears; the opcode/state vocabulary is in [PROTOCOL.md](PROTOCOL.md) §7.4.
+
 ## Relationship to other components
 
 - [`emaldo-local` IMPLEMENTATION_MAP](https://github.com/johanneswilm/emaldo-local/blob/main/docs/IMPLEMENTATION_MAP.md)
