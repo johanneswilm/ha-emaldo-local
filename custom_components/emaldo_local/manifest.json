@@ -1,6 +1,6 @@
 domain: emaldo_local
 name: Emaldo local cutover
-version: 2026.11.26
+version: 2026.11.26.1
 after_dependencies:
   - emaldo
 config_flow: true

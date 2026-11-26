@@ -39,18 +39,26 @@ def _repoint(api_host: str) -> int:
     The emaldo client library resolves hosts through module globals at
     request time, so patching the loaded modules is enough — including
     for already-live client instances. Only module-level ``API_HOST`` /
-    ``DP_HOST`` constant pairs are touched.
+    ``DP_HOST`` constant pairs are touched: either the vendor pair, or a
+    single takeover host already patched in by hand (both names equal),
+    which is what makes moving from one takeover server to another work.
     """
     import sys
 
     n = 0
     for mod in list(sys.modules.values()):
-        if getattr(mod, "API_HOST", None) in (VENDOR_API_HOST, api_host) and \
-           getattr(mod, "DP_HOST", None) in (VENDOR_DP_HOST, api_host):
-            if mod.API_HOST != api_host or mod.DP_HOST != api_host:
-                mod.API_HOST = api_host
-                mod.DP_HOST = api_host
-                n += 1
+        host = getattr(mod, "API_HOST", None)
+        dp = getattr(mod, "DP_HOST", None)
+        if not isinstance(host, str) or not isinstance(dp, str):
+            continue
+        if dp != host and host != VENDOR_API_HOST:
+            continue
+        if host not in (VENDOR_API_HOST, api_host) and host != dp:
+            continue
+        if host != api_host or dp != api_host:
+            mod.API_HOST = api_host
+            mod.DP_HOST = api_host
+            n += 1
     return n
 
 
