@@ -81,16 +81,31 @@ def _write_bundle(hass: HomeAssistant, ca_pem: str) -> str:
     return path
 
 
+def _from_emaldo(obj: object) -> bool:
+    """True for objects whose class comes from the Emaldo integration."""
+    module = getattr(type(obj), "__module__", None)
+    if not isinstance(module, str):
+        return False
+    return module == "custom_components.emaldo" or module.startswith(
+        ("custom_components.emaldo.", "emaldo.")
+    )
+
+
+def _descend(obj: object) -> bool:
+    """Only plain containers and Emaldo objects are worth walking into."""
+    return isinstance(obj, (dict, list, tuple, set, frozenset)) or _from_emaldo(obj)
+
+
 def _trust(hass: HomeAssistant, bundle_path: str) -> int:
     """Point every loaded emaldo client's HTTP session at the bundle.
 
     ``requests`` does not read the system trust store, so installing the
     CA into the host is not enough; the session's ``verify`` has to name
     the bundle. Sessions are found by walking the Emaldo integration's
-    own state — its ``hass.data`` bookkeeping and its module globals —
-    never by a process-wide object scan, so no other integration changes
-    what it trusts. Clients created later are picked up by the periodic
-    pass.
+    own state — its ``hass.data`` bookkeeping, its module globals and the
+    objects reachable from them — never by a process-wide object scan, so
+    no other integration changes what it trusts. Clients created later are
+    picked up by the periodic pass.
     """
     import sys
 
@@ -98,9 +113,7 @@ def _trust(hass: HomeAssistant, bundle_path: str) -> int:
 
     roots: list[object] = [hass.data.get("emaldo")]
     for name, mod in list(sys.modules.items()):
-        if name == "custom_components.emaldo" or name.startswith(
-            ("custom_components.emaldo.", "emaldo.")
-        ):
+        if name == "custom_components.emaldo" or name.startswith("custom_components.emaldo."):
             roots.append(getattr(mod, "__dict__", None))
 
     n = 0
@@ -117,22 +130,27 @@ def _trust(hass: HomeAssistant, bundle_path: str) -> int:
                 n += 1
             continue
         if isinstance(obj, dict):
-            stack.extend(obj.values())
+            stack.extend(v for v in obj.values() if _descend(v))
             continue
         if isinstance(obj, (list, tuple, set, frozenset)):
-            stack.extend(obj)
+            stack.extend(v for v in obj if _descend(v))
+            continue
+        if not _from_emaldo(obj):
             continue
         try:
             session = getattr(obj, "_http", None)
-        except Exception:  # noqa: BLE001 - exotic descriptors must not abort the walk
+        except Exception:  # noqa: BLE001 - an odd attribute must not abort the walk
             session = None
-        if isinstance(session, requests.Session):
-            if session.verify != bundle_path:
-                session.verify = bundle_path
-                n += 1
+        if isinstance(session, requests.Session) and session.verify != bundle_path:
+            session.verify = bundle_path
+            n += 1
+        for slot in getattr(type(obj), "__slots__", ()) or ():
+            value = getattr(obj, slot, None)
+            if _descend(value):
+                stack.append(value)
         members = getattr(obj, "__dict__", None)
         if isinstance(members, dict):
-            stack.extend(members.values())
+            stack.extend(v for v in members.values() if _descend(v))
     return n
 
 
