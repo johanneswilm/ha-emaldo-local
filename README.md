@@ -166,14 +166,28 @@ watch the data flow resume automatically.
 
 The component repoints the loaded Emaldo integration to your API host
 (the library resolves hosts through module globals, so live clients
-follow). One config entry: enter your takeover API's hostname.
+follow). One config entry: enter your takeover API's hostname, and paste
+the takeover CA if your API uses a private one.
 
 1. HACS → Integrations → three-dot menu → Custom repositories →
    add this repo, *Integration*.
 2. Download "Emaldo local cutover", restart Home Assistant.
 3. Settings → Devices & Services → Add Integration →
-   "Emaldo local cutover" → enter your takeover API host.
+   "Emaldo local cutover" → enter your takeover API host. If your API is
+   served with a private CA, paste its certificate into the CA field
+   (fetch it from the takeover server, e.g. `curl -k
+   https://<your-api-host>:4443/ca.pem` - the certificate, never the
+   key). The component writes a bundle of "public CAs + your CA" into
+   `config/emaldo_local_ca_bundle.pem` and points the Emaldo client
+   sessions at it: `requests` does not read the system trust store, so
+   installing the CA into Home Assistant's OS changes nothing, and a
+   client that verified against only your CA would stop trusting every
+   other site.
 4. Reload the existing Emaldo config entry (or restart).
+5. Check: entities update, and the takeover server sees the client's
+   login (`/home/e2e-login`, `/bmt/e2e-user-login`) plus the override
+   writes from your automation.
+
 
 ## Client credentials
 

@@ -3,11 +3,15 @@
     "step": {
       "user": {
         "title": "Emaldo local takeover",
-        "description": "Point the Emaldo integration at your self-hosted takeover API. Enter the HTTPS host of your takeover server (e.g. {example}). The Emaldo cloud integration must already be configured.",
+        "description": "Point the Emaldo integration at your self-hosted takeover API. Enter the HTTPS host of your takeover server (e.g. {example}). The Emaldo cloud integration must already be configured. If the takeover API is served with a private CA, paste that CA certificate (e.g. from {ca}); Home Assistant's client does not read the system trust store, so without it every call fails certificate verification.",
         "data": {
-          "api_host": "Takeover API host"
+          "api_host": "Takeover API host",
+          "ca_pem": "Takeover CA certificate (PEM, optional)"
         }
       }
+    },
+    "error": {
+      "not_a_certificate": "That does not look like a PEM certificate (it must contain BEGIN CERTIFICATE)."
     },
     "abort": {
       "single_instance_allowed": "Already configured."
