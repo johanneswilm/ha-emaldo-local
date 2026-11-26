@@ -18,7 +18,7 @@ import os
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.event import async_track_time_interval
 
 DOMAIN = "emaldo_local"
@@ -81,30 +81,58 @@ def _write_bundle(hass: HomeAssistant, ca_pem: str) -> str:
     return path
 
 
-def _trust(bundle_path: str) -> int:
+def _trust(hass: HomeAssistant, bundle_path: str) -> int:
     """Point every loaded emaldo client's HTTP session at the bundle.
 
     ``requests`` does not read the system trust store, so installing the
     CA into the host is not enough; the session's ``verify`` has to name
-    the bundle. Only sessions owned by an emaldo client object are
-    touched, so no other integration changes what it trusts. Clients
-    created later are picked up by the periodic pass.
+    the bundle. Sessions are found by walking the Emaldo integration's
+    own state — its ``hass.data`` bookkeeping and its module globals —
+    never by a process-wide object scan, so no other integration changes
+    what it trusts. Clients created later are picked up by the periodic
+    pass.
     """
-    import gc
+    import sys
 
     import requests
 
+    roots: list[object] = [hass.data.get("emaldo")]
+    for name, mod in list(sys.modules.items()):
+        if name == "custom_components.emaldo" or name.startswith(
+            ("custom_components.emaldo.", "emaldo.")
+        ):
+            roots.append(getattr(mod, "__dict__", None))
+
     n = 0
-    for obj in gc.get_objects():
-        module = getattr(type(obj), "__module__", "") or ""
-        if not module.startswith(("custom_components.emaldo", "emaldo")):
+    seen: set[int] = set()
+    stack = [r for r in roots if r is not None]
+    while stack and len(seen) < 20000:
+        obj = stack.pop()
+        if id(obj) in seen:
             continue
-        session = getattr(obj, "_http", None)
-        if not isinstance(session, requests.Session):
+        seen.add(id(obj))
+        if isinstance(obj, requests.Session):
+            if obj.verify != bundle_path:
+                obj.verify = bundle_path
+                n += 1
             continue
-        if session.verify != bundle_path:
-            session.verify = bundle_path
-            n += 1
+        if isinstance(obj, dict):
+            stack.extend(obj.values())
+            continue
+        if isinstance(obj, (list, tuple, set, frozenset)):
+            stack.extend(obj)
+            continue
+        try:
+            session = getattr(obj, "_http", None)
+        except Exception:  # noqa: BLE001 - exotic descriptors must not abort the walk
+            session = None
+        if isinstance(session, requests.Session):
+            if session.verify != bundle_path:
+                session.verify = bundle_path
+                n += 1
+        members = getattr(obj, "__dict__", None)
+        if isinstance(members, dict):
+            stack.extend(members.values())
     return n
 
 
@@ -112,21 +140,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Start the repoint loop for this entry."""
     api_host: str = entry.data["api_host"]
     ca_pem: str = entry.data.get("ca_pem") or ""
-    bundle_path = _write_bundle(hass, ca_pem) if ca_pem else None
+    bundle_path = (
+        await hass.async_add_executor_job(_write_bundle, hass, ca_pem) if ca_pem else None
+    )
 
-    @callback
-    def _apply(_now=None) -> None:
+    async def _apply(_now=None) -> None:
         n = _repoint(api_host)
         if n:
-            _LOGGER.info("emaldo_local: repointed %d module(s) to %s",
-                         n, api_host)
+            _LOGGER.info("emaldo_local: repointed %d module(s) to %s", n, api_host)
         if bundle_path:
-            t = _trust(bundle_path)
+            t = await hass.async_add_executor_job(_trust, hass, bundle_path)
             if t:
                 _LOGGER.info("emaldo_local: pointed %d client session(s) at %s",
                              t, bundle_path)
 
-    _apply()
+    await _apply()
     entry.async_on_unload(
         async_track_time_interval(hass, _apply, timedelta(seconds=30))
     )

@@ -1,7 +1,7 @@
 {
   "domain": "emaldo_local",
   "name": "Emaldo local cutover",
-  "version": "2026.11.26.3",
+  "version": "2026.11.26.4",
   "after_dependencies": [
     "emaldo"
   ],
